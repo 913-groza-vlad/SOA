@@ -1,0 +1,16 @@
+server:
+  port: ${SERVER_PORT:9000}
+
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/medapp}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:postgres}
+  jpa:
+    hibernate:
+      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO:update}
+    open-in-view: false
+
+auth:
+  issuer: ${JWT_ISSUER:medapp-auth}
+  ttl-minutes: ${JWT_TTL_MINUTES:60}
