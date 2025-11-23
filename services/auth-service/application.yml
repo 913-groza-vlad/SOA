@@ -3,7 +3,7 @@ server:
 
 spring:
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/medapp}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://postgres:5432/medapp}
     username: ${SPRING_DATASOURCE_USERNAME:postgres}
     password: ${SPRING_DATASOURCE_PASSWORD:postgres}
   jpa:
@@ -12,5 +12,5 @@ spring:
     open-in-view: false
 
 auth:
-  issuer: ${JWT_ISSUER:medapp-auth}
-  ttl-minutes: ${JWT_TTL_MINUTES:60}
+  issuer: ${AUTH_ISSUER:medapp-auth}
+  ttl-minutes: ${AUTH_TTL_MINUTES:60}

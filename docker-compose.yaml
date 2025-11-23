@@ -181,8 +181,9 @@ services:
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: postgres
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
-      JWT_ISSUER: medapp-auth
-      JWT_TTL_MINUTES: 60
+      AUTH_ISSUER: medapp-auth
+      AUTH_TTL_MINUTES: 60
+
     expose:
       - '9000'
     depends_on:

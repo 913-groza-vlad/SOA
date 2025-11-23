@@ -7,9 +7,9 @@ COPY src ./src
 RUN mvn -q -DskipTests package
 
 # Run
-FROM eclipse-temurin:17-jre
+FROM eclipse-temurin:17-jdk
 WORKDIR /app
-COPY --from=build /app/target/*.jar app.jar
+COPY --from=build /app/target/auth-service-0.0.1-SNAPSHOT.jar app.jar
 ENV JAVA_OPTS=""
 EXPOSE 9000
 ENTRYPOINT ["sh","-c","java $JAVA_OPTS -jar /app/app.jar"]
