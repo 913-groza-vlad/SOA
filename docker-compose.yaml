@@ -12,7 +12,7 @@ volumes:
 services:
   # --- Datastore ---
   postgres:
-    image: postgres:18.1-alpine3.22
+    image: postgres:16-alpine
     restart: always
     environment:
       POSTGRES_USER: postgres
@@ -36,12 +36,22 @@ services:
       ZOOKEEPER_CLIENT_PORT: 2181
     ports:
       - '22181:2181'
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'echo ruok | nc -w 2 localhost 2181 | grep imok || exit 1',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
     networks: [mednet]
 
   kafka:
     image: confluentinc/cp-kafka:7.6.1
     depends_on:
-      - zookeeper
+      zookeeper:
+        condition: service_healthy
     ports:
       - '29092:29092'
       - '9092:9092'
@@ -51,13 +61,14 @@ services:
       KAFKA_ZOOKEEPER_CONNECTION_TIMEOUT_MS: 30000
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,PLAINTEXT_HOST://0.0.0.0:29092
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
       KAFKA_LOG4J_LOGGERS: 'kafka.controller=INFO,kafka.request.logger=WARN'
       KAFKA_LOG4J_ROOT_LOGLEVEL: WARN
-      KAFKA_CREATE_TOPICS: 'log-message:1:1'
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
+      - kafka-data:/var/lib/kafka/data
     hostname: kafka
     restart: unless-stopped
     healthcheck:
@@ -72,23 +83,19 @@ services:
     depends_on:
       kafka:
         condition: service_started
-    entrypoint: ['/bin/sh', '-c']
+    entrypoint: ['/bin/bash', '-lc']
     command: >
-      "
-      echo 'Waiting for Kafka...';
-      for i in `seq 1 30`; do
-        nc -z kafka 9092 && break;
-        sleep 2;
-      done;
-      echo 'Creating topics...';
-      kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic appointment-events --partitions 1 --replication-factor 1;
+      set -e;
+      echo "Waiting for DNS 'kafka'..."; for i in {1..60}; do getent hosts kafka && break || sleep 2; done;
+      echo "Waiting for broker kafka:9092..."; for i in {1..60}; do kafka-broker-api-versions --bootstrap-server kafka:9092 && break || sleep 2; done;
+      echo "Creating topics...";
+      kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic appointment-events  --partitions 1 --replication-factor 1;
       kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic notification-events --partitions 1 --replication-factor 1;
-      kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic analytics-events --partitions 1 --replication-factor 1;
-      echo 'Topics ready.'
-      "
+      kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic analytics-events    --partitions 1 --replication-factor 1;
+      echo "Topics ready."
     networks: [mednet]
 
-  # --- RabbitMQ for async commands & notifications fanout ---
+  # --- RabbitMQ ---
   rabbitmq:
     image: rabbitmq:3-management
     restart: unless-stopped
@@ -97,7 +104,7 @@ services:
       RABBITMQ_DEFAULT_PASS: guest
     ports:
       - '5672:5672'
-      - '15672:15672' # mgmt UI
+      - '15672:15672'
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq
     healthcheck:
@@ -107,9 +114,9 @@ services:
       retries: 10
     networks: [mednet]
 
-  # --- Redis for caching + WS pub/sub scaling ---
+  # --- Redis ---
   redis:
-    image: redis:8.4-alpine
+    image: redis:7-alpine
     restart: unless-stopped
     command: ['redis-server', '--save', '', '--appendonly', 'no']
     ports:
@@ -121,7 +128,7 @@ services:
       retries: 20
     networks: [mednet]
 
-  # --- LocalStack (FaaS via AWS Lambda locally) ---
+  # --- LocalStack (FaaS) ---
   localstack:
     image: localstack/localstack:latest
     restart: unless-stopped
@@ -130,44 +137,19 @@ services:
       AWS_DEFAULT_REGION: eu-central-1
       DEBUG: '1'
     ports:
-      - '4566:4566' # edge port
+      - '4566:4566'
     networks: [mednet]
 
-  # --- Dev mail server (SMTP sink) for emails from notification-service ---
+  # --- MailHog (dev SMTP) ---
   mailhog:
     image: mailhog/mailhog:latest
     restart: unless-stopped
     ports:
-      - '1025:1025' # SMTP
-      - '8025:8025' # Web UI
+      - '1025:1025'
+      - '8025:8025'
     networks: [mednet]
 
   # ====================== BACKEND SERVICES (Spring Boot) ======================
-
-  api-gateway:
-    build:
-      context: ./services/api-gateway
-      dockerfile: Dockerfile
-    restart: unless-stopped
-    environment:
-      SERVER_PORT: 8080
-      SPRING_PROFILES_ACTIVE: docker
-      # Auth/JWT
-      AUTH_ISSUER_URI: http://auth-service:9000
-      AUTH_JWKS_URI: http://auth-service:9000/.well-known/jwks.json
-      # Upstreams (service discovery via DNS of service names)
-      APPOINTMENT_SERVICE_URL: http://appointment-service:8083
-      PATIENT_SERVICE_URL: http://patient-service:8081
-      DOCTOR_SERVICE_URL: http://doctor-service:8082
-      NOTIFICATION_SERVICE_URL: ws://notification-service:8085
-    ports:
-      - '8080:8080'
-    depends_on:
-      postgres:
-        condition: service_healthy
-      auth-service:
-        condition: service_started
-    networks: [mednet]
 
   auth-service:
     build:
@@ -183,9 +165,10 @@ services:
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
       AUTH_ISSUER: medapp-auth
       AUTH_TTL_MINUTES: 60
-
     expose:
       - '9000'
+    ports:
+      - '9000:9000'
     depends_on:
       postgres:
         condition: service_healthy
@@ -204,13 +187,17 @@ services:
       SPRING_DATASOURCE_PASSWORD: postgres
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-    expose:
-      - '8081'
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://auth-service:9000/.well-known/jwks.json
+    expose: ['8081']
+    ports:
+      - '8081:8081'
     depends_on:
       postgres:
         condition: service_healthy
       kafka:
         condition: service_healthy
+      kafka-init:
+        condition: service_started
     networks: [mednet]
 
   doctor-service:
@@ -226,13 +213,17 @@ services:
       SPRING_DATASOURCE_PASSWORD: postgres
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-    expose:
-      - '8082'
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://auth-service:9000/.well-known/jwks.json
+    expose: ['8082']
+    ports:
+      - '8082:8082'
     depends_on:
       postgres:
         condition: service_healthy
       kafka:
         condition: service_healthy
+      kafka-init:
+        condition: service_started
     networks: [mednet]
 
   appointment-service:
@@ -247,15 +238,15 @@ services:
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: postgres
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
-      # messaging
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_PORT: 5672
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      # downstreams
       DOCTOR_SERVICE_URL: http://doctor-service:8082
       PATIENT_SERVICE_URL: http://patient-service:8081
-    expose:
-      - '8083'
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://auth-service:9000/.well-known/jwks.json
+    expose: ['8083']
+    ports:
+      - '8083:8083'
     depends_on:
       postgres:
         condition: service_healthy
@@ -263,6 +254,8 @@ services:
         condition: service_healthy
       kafka:
         condition: service_healthy
+      kafka-init:
+        condition: service_started
     networks: [mednet]
 
   notification-service:
@@ -273,17 +266,16 @@ services:
     environment:
       SERVER_PORT: 8085
       SPRING_PROFILES_ACTIVE: docker
-      # WS scaling + caching
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      # SMTP (to MailHog in dev)
       SMTP_HOST: mailhog
       SMTP_PORT: 1025
-      # Optional: queue for async notifications
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_PORT: 5672
-    expose:
-      - '8085'
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://auth-service:9000/.well-known/jwks.json
+    expose: ['8085']
+    ports:
+      - '8085:8085'
     depends_on:
       redis:
         condition: service_healthy
@@ -299,18 +291,20 @@ services:
     environment:
       SERVER_PORT: 8086
       SPRING_PROFILES_ACTIVE: docker
-      # This service owns event/notification topics & bindings
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_PORT: 5672
-      # Expose simple admin endpoints to create topics/queues/bindings
-    expose:
-      - '8086'
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://auth-service:9000/.well-known/jwks.json
+    expose: ['8086']
+    ports:
+      - '8086:8086'
     depends_on:
       kafka:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+      kafka-init:
+        condition: service_started
     networks: [mednet]
 
   analytics-service:
@@ -326,32 +320,31 @@ services:
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: postgres
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
-    expose:
-      - '8087'
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://auth-service:9000/.well-known/jwks.json
+    expose: ['8087']
+    ports:
+      - '8087:8087'
     depends_on:
       kafka:
         condition: service_healthy
       postgres:
         condition: service_healthy
+      kafka-init:
+        condition: service_started
     networks: [mednet]
 
   # ====================== FRONTENDS (React -> Nginx static) ======================
-
   patient-ui:
     build:
       context: ./frontends/patient-ui
       dockerfile: Dockerfile
     restart: unless-stopped
     environment:
-      # frontends call the gateway
-      REACT_APP_API_BASE_URL: http://localhost:8080
-      REACT_APP_WS_URL: ws://localhost:8080
+      REACT_APP_API_BASE_URL: http://localhost:4000
+      REACT_APP_WS_URL: ws://localhost:4000
     ports:
-      - '3000:80' # container runs nginx serving the React build on :80
+      - '3000:80'
     networks: [mednet]
-    depends_on:
-      api-gateway:
-        condition: service_started
 
   doctor-ui:
     build:
@@ -359,24 +352,26 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     environment:
-      REACT_APP_API_BASE_URL: http://localhost:8080
-      REACT_APP_WS_URL: ws://localhost:8080
+      REACT_APP_API_BASE_URL: http://localhost:4000
+      REACT_APP_WS_URL: ws://localhost:4000
     ports:
       - '3001:80'
     networks: [mednet]
-    depends_on:
-      api-gateway:
-        condition: service_started
 
   # --- Edge reverse proxy ---
   nginx:
-    image: nginx:latest
+    image: nginx:alpine
     restart: unless-stopped
     volumes:
-      - ./ops/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ops/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:
-      api-gateway:
-        condition: service_started
+      - auth-service
+      - patient-service
+      - doctor-service
+      - appointment-service
+      - notification-service
+      - patient-ui
+      - doctor-ui
     ports:
       - '4000:4000'
     networks: [mednet]
