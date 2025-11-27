@@ -21,22 +21,22 @@ public class PatientController {
         this.app = app;
     }
 
-    @PostMapping
+    @PostMapping({"", "/"})
     public ResponseEntity<?> create(@RequestBody @Valid PatientDtos.CreateRequest req) {
         Long id = app.create(req);
         return ResponseEntity.ok(id);
+    }
+
+    @GetMapping({"", "/"})
+    public ResponseEntity<Page<PatientDtos.Response>> list(Pageable pageable) {
+        Page<PatientDtos.Response> page = app.list(pageable).map(PatientMapper::toResponse);
+        return ResponseEntity.ok(page);
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<PatientDtos.Response> get(@PathVariable Long id) {
         Patient p = app.get(id);
         return ResponseEntity.ok(PatientMapper.toResponse(p));
-    }
-
-    @GetMapping
-    public ResponseEntity<Page<PatientDtos.Response>> list(Pageable pageable) {
-        Page<PatientDtos.Response> page = app.list(pageable).map(PatientMapper::toResponse);
-        return ResponseEntity.ok(page);
     }
 
     @PutMapping("/{id}")
