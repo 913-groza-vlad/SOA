@@ -348,7 +348,7 @@ services:
     depends_on:
       - auth-service
       - patient-service
-      # - doctor-service
+      - doctor-service
       # - appointment-service
       # - notification-service
       # - patient-ui
