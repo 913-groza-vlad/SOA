@@ -349,7 +349,7 @@ services:
       - auth-service
       - patient-service
       - doctor-service
-      # - appointment-service
+      - appointment-service
       # - notification-service
       # - patient-ui
       # - doctor-ui
