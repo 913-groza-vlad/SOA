@@ -1,6 +1,7 @@
 package com.medapp.authservice.service;
 
 import com.medapp.authservice.domain.Role;
+import com.medapp.authservice.domain.UserAccount;
 import com.medapp.authservice.security.KeyManager;
 import com.nimbusds.jose.JOSEObjectType;
 import com.nimbusds.jose.JWSAlgorithm;
@@ -30,17 +31,18 @@ public class TokenService {
         this.ttlMinutes = ttlMinutes;
     }
 
-    public String createToken(String subject, Role role) {
+    public String createToken(UserAccount user) {
         try {
             Instant now = Instant.now();
             Instant exp = now.plusSeconds(ttlMinutes * 60);
 
             JWTClaimsSet claims = new JWTClaimsSet.Builder()
-                    .subject(subject)
+                    .subject(user.getUsername())
                     .issuer(issuer)
                     .issueTime(Date.from(now))
                     .expirationTime(Date.from(exp))
-                    .claim("role", role.name())
+                    .claim("role", user.getRole().name())
+                    .claim("userId", user.getId())
                     .build();
 
             JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.RS256)

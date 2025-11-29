@@ -32,6 +32,6 @@ public class AuthService {
         if (!encoder.matches(rawPassword, ua.getPasswordHash())) {
             throw new IllegalArgumentException("invalid_credentials");
         }
-        return tokens.createToken(ua.getUsername(), ua.getRole());
+        return tokens.createToken(ua);
     }
 }
