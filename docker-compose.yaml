@@ -86,7 +86,6 @@ services:
       echo "Creating topics...";
       kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic appointment-events  --partitions 1 --replication-factor 1;
       kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic notification-events --partitions 1 --replication-factor 1;
-      kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic analytics-events    --partitions 1 --replication-factor 1;
       echo "Topics ready."
     networks: [mednet]
 
@@ -290,34 +289,10 @@ services:
         condition: service_started
     networks: [mednet]
 
-  analytics-service:
-    build:
-      context: ./services/analytics-service
-      dockerfile: Dockerfile
-    restart: unless-stopped
-    environment:
-      SERVER_PORT: 8087
-      SPRING_PROFILES_ACTIVE: docker
-      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/medapp
-      SPRING_DATASOURCE_USERNAME: postgres
-      SPRING_DATASOURCE_PASSWORD: postgres
-      SPRING_JPA_HIBERNATE_DDL_AUTO: update
-      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://auth-service:9000/.well-known/jwks.json
-    expose: ['8087']
-    depends_on:
-      kafka:
-        condition: service_healthy
-      postgres:
-        condition: service_healthy
-      kafka-init:
-        condition: service_started
-    networks: [mednet]
-
   # ====================== FRONTENDS (React -> Nginx static) ======================
   patient-ui:
     build:
-      context: ./frontends/patient-ui
+      context: ./frontend/patient-ui
       dockerfile: Dockerfile
     restart: unless-stopped
     environment:
@@ -329,7 +304,7 @@ services:
 
   doctor-ui:
     build:
-      context: ./frontends/doctor-ui
+      context: ./frontend/doctor-ui
       dockerfile: Dockerfile
     restart: unless-stopped
     environment:
@@ -350,7 +325,7 @@ services:
       - patient-service
       - doctor-service
       - appointment-service
-      # - notification-service
+      - notification-service
       # - patient-ui
       # - doctor-ui
     ports:
