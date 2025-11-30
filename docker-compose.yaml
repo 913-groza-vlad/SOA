@@ -290,6 +290,15 @@ services:
     networks: [mednet]
 
   # ====================== FRONTENDS (React -> Nginx static) ======================
+  auth-ui:
+    build:
+      context: ./frontend/auth-ui
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - '3002:80'
+    networks: [mednet]
+
   patient-ui:
     build:
       context: ./frontend/patient-ui
@@ -326,6 +335,7 @@ services:
       - doctor-service
       - appointment-service
       - notification-service
+      - auth-ui
       # - patient-ui
       # - doctor-ui
     ports:
