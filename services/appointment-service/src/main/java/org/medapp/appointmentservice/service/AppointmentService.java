@@ -22,6 +22,7 @@ import org.springframework.web.client.RestClientResponseException;
 import tools.jackson.databind.ObjectMapper;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -73,6 +74,11 @@ public class AppointmentService {
     @Transactional(readOnly = true)
     public Page<Appointment> list(Pageable pageable) {
         return repo.findAll(pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Appointment> listByPatientId(Long patientId) {
+        return repo.findByPatientId(patientId);
     }
 
     @Transactional

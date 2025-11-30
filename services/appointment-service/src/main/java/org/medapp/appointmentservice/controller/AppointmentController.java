@@ -10,6 +10,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/appointments")
 public class AppointmentController {
@@ -36,6 +38,16 @@ public class AppointmentController {
     public ResponseEntity<AppointmentDtos.Response> get(@PathVariable Long id) {
         Appointment a = app.get(id);
         return ResponseEntity.ok(AppointmentMapper.toResponse(a));
+    }
+
+    @GetMapping("/patient/{patientId}")
+    public ResponseEntity<List<AppointmentDtos.Response>> getByPatientId(
+            @PathVariable Long patientId) {
+        List<Appointment> appointments = app.listByPatientId(patientId);
+        List<AppointmentDtos.Response> response = appointments.stream()
+                .map(AppointmentMapper::toResponse)
+                .toList();
+        return ResponseEntity.ok(response);
     }
 
     @PutMapping("/{id}")
