@@ -8,6 +8,7 @@ import java.util.List;
 
 public interface AppointmentRepository extends JpaRepository<Appointment,Long> {
     List<Appointment> findByDoctorIdAndStartTimeBetween(Long doctorId, LocalDateTime from, LocalDateTime to);
+    List<Appointment> findByDoctorId(Long doctorId);
     List<Appointment> findByPatientId(Long patientId);
     List<Appointment> findByDoctorIdAndStatusNotAndStartTimeLessThanAndEndTimeGreaterThan(
             Long doctorId,

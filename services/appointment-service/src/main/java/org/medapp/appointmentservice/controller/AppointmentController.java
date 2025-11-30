@@ -50,6 +50,16 @@ public class AppointmentController {
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping("/doctor/{doctorId}")
+    public ResponseEntity<List<AppointmentDtos.Response>> getByDoctorId(
+            @PathVariable Long doctorId) {
+        List<Appointment> appointments = app.listByDoctorId(doctorId);
+        List<AppointmentDtos.Response> response = appointments.stream()
+                .map(AppointmentMapper::toResponse)
+                .toList();
+        return ResponseEntity.ok(response);
+    }
+
     @PutMapping("/{id}")
     public ResponseEntity<?> update(@PathVariable Long id, @RequestBody @Valid AppointmentDtos.UpdateRequest req) {
         app.update(id, req);

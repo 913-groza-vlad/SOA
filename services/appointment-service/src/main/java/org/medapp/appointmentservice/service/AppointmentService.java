@@ -81,6 +81,11 @@ public class AppointmentService {
         return repo.findByPatientId(patientId);
     }
 
+    @Transactional(readOnly = true)
+    public List<Appointment> listByDoctorId(Long doctorId) {
+        return repo.findByDoctorId(doctorId);
+    }
+
     @Transactional
     public void update(Long id, AppointmentDtos.UpdateRequest req) {
         Appointment a = get(id);
