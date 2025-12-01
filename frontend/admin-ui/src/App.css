@@ -1,0 +1,54 @@
+#root {
+  /* container styles moved to index.css for global consistency */
+}
+
+/* Light background, dark text for better readability */
+body {
+  color: #0f1724; /* dark slate */
+  background: #f8fafc; /* light gray */
+}
+
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 50;
+}
+
+.modal {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 0.75rem;
+  width: 500px;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 15px 45px rgba(0,0,0,0.2);
+  color: #0f1724;
+}
+
+.json-viewer {
+  background: #f3f4f6;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  max-height: 300px;
+  overflow-y: auto;
+  font-family: monospace;
+  font-size: 0.85rem;
+  color: #0f1724;
+}
+
+.filters {
+  margin-bottom: 1rem;
+}
+
+.filters select {
+  padding: 0.5rem;
+  color: #0f1724;
+}
+

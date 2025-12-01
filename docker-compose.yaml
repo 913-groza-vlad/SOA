@@ -323,6 +323,18 @@ services:
       - '3001:80'
     networks: [mednet]
 
+  admin-ui:
+    build:
+      context: ./frontend/admin-ui
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      REACT_APP_API_BASE_URL: http://localhost:4000
+      REACT_APP_WS_URL: ws://localhost:4000
+    ports:
+      - '3003:80'
+    networks: [mednet]
+
   # --- Edge reverse proxy ---
   nginx:
     image: nginx:alpine
