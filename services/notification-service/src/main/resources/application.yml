@@ -51,3 +51,9 @@ notification:
   websocket:
     application-destination-prefix: /app
     topic-prefix: /topic/notifications
+
+services:
+  patient:
+    base-url: ${PATIENT_SERVICE_URL:http://patient-service:8081}
+  doctor:
+    base-url: ${DOCTOR_SERVICE_URL:http://doctor-service:8082}

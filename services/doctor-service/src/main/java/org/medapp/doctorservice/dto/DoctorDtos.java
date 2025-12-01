@@ -32,6 +32,7 @@ public class DoctorDtos {
             String specialization,
             String bio,
             boolean active,
-            String createdAt
+            String createdAt,
+            Long userId
     ) {}
 }

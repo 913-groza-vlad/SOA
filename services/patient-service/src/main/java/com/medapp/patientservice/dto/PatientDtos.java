@@ -30,6 +30,7 @@ public class PatientDtos {
             String email,
             String phone,
             LocalDate dateOfBirth,
-            String createdAt
+            String createdAt,
+            Long userId
     ) {}
 }

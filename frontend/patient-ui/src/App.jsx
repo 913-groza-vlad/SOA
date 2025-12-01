@@ -2,7 +2,9 @@ import React, { useEffect, useState } from "react";
 import PatientSelector from "./components/PatientSelector";
 import AppointmentForm from "./components/AppointmentForm";
 import AppointmentList from "./components/AppointmentList";
-import { decodeToken, getRoleFromToken } from "./utils/jwt";
+import { decodeToken, getRoleFromToken, getUserIdFromToken } from "./utils/jwt";
+import NotificationBell from "./components/NotificationBell";
+import { fetchPatients } from "./api/patientApi";
 
 const TOKEN_KEY = "authToken";
 const PATIENT_ID_KEY = "patientId";
@@ -15,6 +17,7 @@ export default function App() {
   const [role, setRole] = useState("");
   const [authError, setAuthError] = useState("");
   const [authChecked, setAuthChecked] = useState(false);
+  const [userId, setUserId] = useState(null);
 
   useEffect(() => {
     let mounted = true;
@@ -24,6 +27,7 @@ export default function App() {
       let finalAuthError = "";
       let finalRole = "";
       let finalUsername = "";
+      let finalUserId = null;
 
       if (!token) {
         finalAuthError = "No token found. Please log in first.";
@@ -35,6 +39,7 @@ export default function App() {
           const r = getRoleFromToken(token);
           finalRole = r || "";
           finalUsername = decoded.sub || decoded.username || "";
+          finalUserId = getUserIdFromToken(token);
           if (r && r !== "PATIENT") {
             finalAuthError = `This UI is for PATIENT role. You are logged in as ${r}.`;
           }
@@ -47,6 +52,7 @@ export default function App() {
         if (!mounted) return;
         setRole(finalRole);
         setUsername(finalUsername);
+        setUserId(finalUserId);
         setAuthError(finalAuthError);
         setAuthChecked(true);
       }, 0);
@@ -60,6 +66,31 @@ export default function App() {
   function handlePatientSelected(id) {
     setPatientId(id);
   }
+
+  // Auto-resolve the patient entity for the logged-in user (if any)
+  useEffect(() => {
+    let mounted = true;
+    if (!authChecked || !userId || patientId) return;
+
+    (async function findMyPatient() {
+      try {
+        const page = await fetchPatients(0, 200);
+        if (!mounted) return;
+        const content = page.content || page || [];
+        const match = content.find((p) => p.userId != null && Number(p.userId) === Number(userId));
+        if (match) {
+          localStorage.setItem(PATIENT_ID_KEY, String(match.id));
+          setPatientId(String(match.id));
+        }
+      } catch (err) {
+        console.error("Failed to auto-resolve patient:", err);
+      }
+    })();
+
+    return () => {
+      mounted = false;
+    };
+  }, [authChecked, userId, patientId]);
 
   if (!authChecked) {
     return null; // or a small loading indicator
@@ -89,6 +120,7 @@ export default function App() {
           <span className="muted">
             Logged in as <strong>{username}</strong> ({role})
           </span>
+          {userId && <NotificationBell userId={userId} />}
           <button
             className="small ghost"
             onClick={() => {

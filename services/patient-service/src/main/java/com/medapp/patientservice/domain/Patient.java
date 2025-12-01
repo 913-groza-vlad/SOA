@@ -26,6 +26,9 @@ public class Patient {
 
     private LocalDate dateOfBirth;
 
+    @Column(unique = true)
+    private Long userId;
+
     @Column(nullable=false, updatable=false)
     private OffsetDateTime createdAt;
 

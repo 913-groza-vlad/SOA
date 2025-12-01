@@ -336,8 +336,8 @@ services:
       - appointment-service
       - notification-service
       - auth-ui
-      # - patient-ui
-      # - doctor-ui
+      - patient-ui
+      - doctor-ui
     ports:
       - '4000:4000'
     networks: [mednet]

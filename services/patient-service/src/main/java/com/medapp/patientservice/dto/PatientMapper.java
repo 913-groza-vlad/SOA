@@ -11,7 +11,8 @@ public class PatientMapper {
                 p.getEmail(),
                 p.getPhone(),
                 p.getDateOfBirth(),
-                p.getCreatedAt() != null ? p.getCreatedAt().toString() : null
+                p.getCreatedAt() != null ? p.getCreatedAt().toString() : null,
+                p.getUserId()
         );
     }
 }

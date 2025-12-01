@@ -3,6 +3,7 @@ import DoctorSelector from "./components/DoctorSelector";
 import DoctorAppointmentList from "./components/DoctorAppointmentList";
 import NotificationBell from "./components/NotificationBell";
 import { decodeToken, getRoleFromToken, getUserIdFromToken, getUsernameFromToken } from "./utils/jwt";
+import { fetchDoctors } from "./api/doctorApi";
 
 const TOKEN_KEY = "authToken";
 const DOCTOR_ID_KEY = "doctorId";
@@ -63,6 +64,32 @@ export default function App() {
   function handleDoctorSelected(id) {
     setDoctorId(id);
   }
+
+  // If authenticated and we don't have a doctor selected, try to auto-resolve
+  useEffect(() => {
+    let mounted = true;
+    if (!authChecked || !userId || doctorId) return;
+
+    (async function findMyDoctor() {
+      try {
+        const page = await fetchDoctors(0, 200);
+        if (!mounted) return;
+        const content = page.content || page || [];
+        const match = content.find((d) => d.userId != null && Number(d.userId) === Number(userId));
+        if (match) {
+          localStorage.setItem(DOCTOR_ID_KEY, String(match.id));
+          setDoctorId(String(match.id));
+        }
+      } catch (err) {
+        // ignore — user can still select manually
+        console.error("Failed to auto-resolve doctor:", err);
+      }
+    })();
+
+    return () => {
+      mounted = false;
+    };
+  }, [authChecked, userId, doctorId]);
 
   if (!authChecked) return null;
 

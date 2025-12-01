@@ -14,7 +14,8 @@ public class DoctorMapper {
                 d.getSpecialization(),
                 d.getBio(),
                 d.isActive(),
-                d.getCreatedAt() != null ? d.getCreatedAt().toString() : null
+                d.getCreatedAt() != null ? d.getCreatedAt().toString() : null,
+                d.getUserId()
         );
     }
 }

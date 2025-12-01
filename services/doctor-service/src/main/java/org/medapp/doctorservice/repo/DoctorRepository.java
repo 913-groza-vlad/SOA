@@ -10,4 +10,5 @@ public interface DoctorRepository extends JpaRepository<Doctor,Long> {
     boolean existsByEmail(String email);
     Optional<Doctor> findByEmail(String email);
     List<Doctor> findByActiveTrue();
+    Optional<Doctor> findByUserId(Long userId);
 }

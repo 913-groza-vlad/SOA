@@ -36,7 +36,11 @@ public class Doctor {
     @Column(length=500)
     private String bio;
 
+    @Column(unique = true)
+    private Long userId;
+
     private boolean active;
+
 
     @Column(nullable=false, updatable=false)
     private OffsetDateTime createdAt;
