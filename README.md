@@ -66,7 +66,9 @@ The application enables patients and doctors to manage appointments, receive liv
   - `doctor-ui`: Doctor portal.
   - `admin-ui`: Admin panel with real-time events.
 
-You can later add UML and C4 diagrams (system context, container, and component diagrams) exported from IntelliJ or other tooling.
+The the following architecture diagram illustrates the high-level structure and interactions between components:
+
+![c4 model Diagram](readme_images/c4model_diagram.jpg)
 
 ---
 
