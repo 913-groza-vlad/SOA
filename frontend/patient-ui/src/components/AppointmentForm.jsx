@@ -70,7 +70,7 @@ export default function AppointmentForm({ patientId, onCreated }) {
             <option value="">Select doctor…</option>
             {doctors.map((d) => (
               <option key={d.id} value={d.id}>
-                Dr. {d.firstName} {d.lastName} ({d.specialty})
+                Dr. {d.firstName} {d.lastName} ({d.specialization})
               </option>
             ))}
           </select>

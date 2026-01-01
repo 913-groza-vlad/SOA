@@ -41,4 +41,6 @@ appointment:
   kafka:
     topic: appointment-events
   rabbit:
-    notification-queue: appointment-notifications
+    exchange: appointment.exchange
+    routing-key: appointment.*
+    notification-queue: appointment.admin.queue

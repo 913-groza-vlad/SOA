@@ -4,6 +4,8 @@ import lombok.RequiredArgsConstructor;
 import org.medapp.appointmentservice.domain.Appointment;
 import org.medapp.appointmentservice.dto.AppointmentDtos;
 import org.medapp.appointmentservice.dto.AppointmentEvent;
+import org.medapp.appointmentservice.dto.DoctorUserLookup;
+import org.medapp.appointmentservice.dto.PatientUserLookup;
 import org.medapp.appointmentservice.repo.AppointmentRepository;
 import org.springframework.amqp.core.TopicExchange;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -39,8 +41,6 @@ public class AppointmentService {
     @Value("${appointment.kafka.topic:appointment-events}")
     private String appointmentTopic;
 
-    @Value("${appointment.rabbit.routing-key:appointment.created}")
-    private String rabbitRoutingKey;
 
     @Transactional
     public Long create(AppointmentDtos.CreateRequest req) {
@@ -208,15 +208,38 @@ public class AppointmentService {
     }
 
     private void sendNotification(Appointment a, String type) {
+        String routingKey = "appointment." + type.toLowerCase();
+
+        Long patientUserId = resolvePatientUserId(a.getPatientId());
+        Long doctorUserId = resolveDoctorUserId(a.getDoctorId());
+
         Map<String, Object> message = Map.of(
                 "type", "APPOINTMENT_" + type,
                 "appointmentId", a.getId(),
                 "patientId", a.getPatientId(),
                 "doctorId", a.getDoctorId(),
+                "patientUserId", patientUserId,
+                "doctorUserId", doctorUserId,
                 "startTime", a.getStartTime().toString(),
                 "endTime", a.getEndTime().toString()
         );
         String payload = objectMapper.writeValueAsString(message);
-        rabbitTemplate.convertAndSend(appointmentExchange.getName(), rabbitRoutingKey, payload);
+        rabbitTemplate.convertAndSend(appointmentExchange.getName(), routingKey, payload);
+    }
+
+    private Long resolvePatientUserId(Long patientId) {
+        String token = currentBearerToken();
+        var req = patientRestClient.get().uri("/api/patients/{id}", patientId);
+        if (token != null) req = req.header("Authorization", "Bearer " + token);
+        PatientUserLookup p = req.retrieve().body(PatientUserLookup.class);
+        return p != null ? p.userId() : null;
+    }
+
+    private Long resolveDoctorUserId(Long doctorId) {
+        String token = currentBearerToken();
+        var req = doctorRestClient.get().uri("/api/doctors/{id}", doctorId);
+        if (token != null) req = req.header("Authorization", "Bearer " + token);
+        DoctorUserLookup d = req.retrieve().body(DoctorUserLookup.class);
+        return d != null ? d.userId() : null;
     }
 }

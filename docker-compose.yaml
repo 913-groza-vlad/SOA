@@ -232,7 +232,11 @@ services:
       DOCTOR_SERVICE_URL: http://doctor-service:8082
       PATIENT_SERVICE_URL: http://patient-service:8081
       SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://auth-service:9000/.well-known/jwks.json
+      APPOINTMENT_RABBIT_EXCHANGE: appointment.exchange
     expose: ['8083']
+    deploy:
+      mode: replicated
+      replicas: 2
     depends_on:
       postgres:
         condition: service_healthy
@@ -259,6 +263,9 @@ services:
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_PORT: 5672
       SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://auth-service:9000/.well-known/jwks.json
+      APPOINTMENT_RABBIT_EXCHANGE: appointment.exchange
+      APPOINTMENT_RABBIT_ROUTING_KEY: appointment.*
+      NOTIFICATION_RABBIT_QUEUE: appointment.notifications.queue
     expose: ['8085']
     depends_on:
       redis:
@@ -279,6 +286,9 @@ services:
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_PORT: 5672
       SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://auth-service:9000/.well-known/jwks.json
+      APPOINTMENT_RABBIT_EXCHANGE: appointment.exchange
+      APPOINTMENT_RABBIT_ROUTING_KEY: appointment.*
+      APPOINTMENT_RABBIT_NOTIFICATION_QUEUE: appointment.admin.queue
     expose: ['8086']
     depends_on:
       kafka:

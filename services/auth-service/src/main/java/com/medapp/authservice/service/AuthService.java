@@ -7,6 +7,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -33,5 +36,11 @@ public class AuthService {
             throw new IllegalArgumentException("invalid_credentials");
         }
         return tokens.createToken(ua);
+    }
+
+    public List<String> getAllUsernames() {
+        return repo.findAll().stream()
+                .map(UserAccount::getUsername)
+                .collect(Collectors.toList());
     }
 }

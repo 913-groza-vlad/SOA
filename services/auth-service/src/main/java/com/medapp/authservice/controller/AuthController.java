@@ -7,6 +7,7 @@ import com.medapp.authservice.dto.AuthDtos.*;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import java.util.List;
 
 @RestController
 @RequestMapping("/auth")
@@ -25,5 +26,11 @@ public class AuthController {
     public ResponseEntity<TokenResponse> login(@RequestBody @Valid LoginRequest req) {
         String token = app.login(req.username(), req.password());
         return ResponseEntity.ok(new TokenResponse(token, "Bearer"));
+    }
+
+    @GetMapping("/users")
+    public ResponseEntity<List<String>> getAllUsernames() {
+        List<String> usernames = app.getAllUsernames();
+        return ResponseEntity.ok(usernames);
     }
 }

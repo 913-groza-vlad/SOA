@@ -37,8 +37,6 @@ appointment:
     topic: appointment-events
   rabbit:
     exchange: appointment.exchange
-    routing-key: appointment.created
-    queue: appointment-notifications
 
 # URLs for doctor & patient validation (internal Docker DNS)
 services:

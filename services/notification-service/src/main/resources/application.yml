@@ -45,9 +45,14 @@ management:
       exposure:
         include: health,info
 
+appointment:
+  rabbit:
+    exchange: appointment.exchange
+    routing-key: appointment.*
+
 notification:
   rabbit:
-    queue: appointment-notifications
+    queue: appointment.notifications.queue
   websocket:
     application-destination-prefix: /app
     topic-prefix: /topic/notifications
