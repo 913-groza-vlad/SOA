@@ -102,7 +102,6 @@ The the following architecture diagram illustrates the high-level structure and 
 
   - CRUD operations for patient profiles.
   - Link users from auth-service to patient entities.
-  - Provide a way to discover the current patient based on the authenticated user.
 
 - **Key technologies:**
   - Spring Boot 4
@@ -117,7 +116,6 @@ The the following architecture diagram illustrates the high-level structure and 
 - **Responsibilities:**
   - CRUD operations for doctors (name, specialty, etc.).
   - Link users to doctors.
-  - Provide doctor discovery based on JWT-authenticated user.
 
 ![doctor-service Diagram](readme_images/doctor_service.jpg)
 
@@ -200,7 +198,7 @@ The appointment service is deployed with multiple replicas, and Docker's interna
 - postgres
 - redis
 - rabbitmq
-- zookeeper + kafka + kafka-init (topic creation)
+- zookeeper + kafka
 - mailhog
 - nginx
 
